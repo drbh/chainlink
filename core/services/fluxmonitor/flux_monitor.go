@@ -61,6 +61,7 @@ type Service interface {
 }
 
 type concreteFluxMonitor struct {
+	mut            sync.Mutex
 	store          *store.Store
 	runManager     RunManager
 	logBroadcaster log.Broadcaster
@@ -106,6 +107,8 @@ func New(
 
 // SetLogger sets and reconfigures the logger for the flux monitor service
 func (fm *concreteFluxMonitor) SetLogger(logger *logger.Logger) {
+	fm.mut.Lock()
+	defer fm.mut.Unlock()
 	fm.logger = logger
 }
 

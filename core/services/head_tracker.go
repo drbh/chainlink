@@ -133,6 +133,7 @@ type HeadTracker struct {
 	listenForNewHeadsWg   sync.WaitGroup
 	backfillMB            utils.Mailbox
 	subscriptionSucceeded chan struct{}
+	mut                   sync.Mutex
 }
 
 // NewHeadTracker instantiates a new HeadTracker using the orm to persist new block numbers.
@@ -156,6 +157,8 @@ func NewHeadTracker(l *logger.Logger, store *strpkg.Store, callbacks []strpkg.He
 
 // SetLogger sets and reconfigures the logger for the head tracker service
 func (ht *HeadTracker) SetLogger(logger *logger.Logger) {
+	ht.mut.Lock()
+	defer ht.mut.Unlock()
 	ht.logger = logger
 }
 
