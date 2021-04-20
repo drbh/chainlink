@@ -543,7 +543,20 @@ declare module 'core/store/models' {
     offChainReportingOracleSpec: null
   }
 
-  export type JobSpecV2 = DirectRequestJobV2Spec | FluxMonitorJobV2Spec | OffChainReportingOracleJobV2Spec | KeeperV2Spec
+  export type CronV2Spec = BaseJobSpecV2 & {
+    type: 'cron',
+    keeperSpec: null,
+    cronSpec: {
+      schedule: string
+      createdAt: time.Time
+      updatedAt: time.Time
+    }
+    directRequestSpec: null
+    fluxMonitorSpec: null
+    offChainReportingOracleSpec: null
+  }
+
+  export type JobSpecV2 = DirectRequestJobV2Spec | FluxMonitorJobV2Spec | OffChainReportingOracleJobV2Spec | KeeperV2Spec | CronV2Spec
 
   export interface OcrJobRun {
     outputs: PipelineTaskOutput[]

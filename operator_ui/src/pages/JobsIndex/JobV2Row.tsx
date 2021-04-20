@@ -21,6 +21,8 @@ export const JobV2Row = withStyles(tableStyles)(({ job, classes }: Props) => {
         return job.attributes.offChainReportingOracleSpec.createdAt
       case 'keeper':
         return job.attributes.keeperSpec.createdAt
+      case 'cron':
+        return job.attributes.cronSpec.createdAt
     }
   }, [job])
 
@@ -33,6 +35,8 @@ export const JobV2Row = withStyles(tableStyles)(({ job, classes }: Props) => {
         return 'Off-chain reporting'
       case 'keeper':
         return 'Keeper'
+      case 'cron':
+        return 'Cron'
       default:
         return ''
     }
