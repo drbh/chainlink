@@ -105,14 +105,14 @@ func NewBroadcaster(orm ORM, ethClient eth.Client, config Config) *broadcaster {
 }
 
 func (b *broadcaster) Start() error {
-	return b.StartOnce("Log broadcaster", func() error {
+	return b.StartOnce("LogBroadcaster", func() error {
 		go b.awaitInitialSubscribers()
 		return nil
 	})
 }
 
 func (b *broadcaster) Stop() error {
-	return b.StopOnce("Log broadcaster", func() error {
+	return b.StopOnce("LogBroadcaster", func() error {
 		close(b.chStop)
 		<-b.chDone
 		return nil
@@ -143,9 +143,15 @@ func (b *broadcaster) Register(listener Listener, opts ListenerOpts) (connected 
 	if len(opts.Logs) < 1 {
 		logger.Fatal("Must supply at least 1 Log to Register")
 	}
-	b.addSubscriber.Deliver(registration{listener, opts})
+	wasOverCapacity := b.addSubscriber.Deliver(registration{listener, opts})
+	if wasOverCapacity {
+		logger.Error("LogBroadcaster: subscription mailbox is over capacity - dropped the oldest unprocessed subscription")
+	}
 	return b.IsConnected(), func() {
-		b.rmSubscriber.Deliver(registration{listener, opts})
+		wasOverCapacity := b.rmSubscriber.Deliver(registration{listener, opts})
+		if wasOverCapacity {
+			logger.Error("LogBroadcaster: subscription removal mailbox is over capacity - dropped the oldest unprocessed removal")
+		}
 	}
 }
 

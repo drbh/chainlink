@@ -96,7 +96,10 @@ func (executor *UpkeepExecutor) Close() error {
 }
 
 func (executor *UpkeepExecutor) OnNewLongestChain(ctx context.Context, head models.Head) {
-	executor.mailbox.Deliver(head)
+	wasOverCapacity := executor.mailbox.Deliver(head)
+	if wasOverCapacity {
+		logger.Error("UpkeepExecutor: head mailbox is over capacity - dropped the oldest unprocessed head")
+	}
 }
 
 func (executor *UpkeepExecutor) run() {
