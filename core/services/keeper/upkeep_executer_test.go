@@ -25,7 +25,7 @@ import (
 func setup(t *testing.T) (
 	*store.Store,
 	*mocks.Client,
-	*keeper.UpkeepExecutor,
+	*keeper.UpkeepExecuter,
 	keeper.Registry,
 	keeper.UpkeepRegistration,
 	job.Job,
@@ -37,7 +37,7 @@ func setup(t *testing.T) (
 	registry, job := cltest.MustInsertKeeperRegistry(t, store)
 	jpv2 := cltest.NewJobPipelineV2(t, store.DB)
 	headBroadcaster := services.NewHeadBroadcaster()
-	executor := keeper.NewUpkeepExecutor(job, store.DB, jpv2.Pr, ethMock, headBroadcaster, 0)
+	executor := keeper.NewUpkeepExecuter(job, store.DB, jpv2.Pr, ethMock, headBroadcaster, 0)
 	upkeep := cltest.MustInsertUpkeepForRegistry(t, store, registry)
 	err := executor.Start()
 	t.Cleanup(func() { executor.Close() })
@@ -59,14 +59,14 @@ var checkUpkeepResponse = struct {
 	LinkEth:        big.NewInt(0), // doesn't matter
 }
 
-func Test_UpkeepExecutor_ErrorsIfStartedTwice(t *testing.T) {
+func Test_UpkeepExecuter_ErrorsIfStartedTwice(t *testing.T) {
 	t.Parallel()
 	_, _, executor, _, _, _, _ := setup(t)
 	err := executor.Start() // already started in setup()
 	require.Error(t, err)
 }
 
-func Test_UpkeepExecutor_PerformsUpkeep_Happy(t *testing.T) {
+func Test_UpkeepExecuter_PerformsUpkeep_Happy(t *testing.T) {
 	t.Parallel()
 	store, ethMock, executor, registry, upkeep, job, jpv2 := setup(t)
 
@@ -90,10 +90,43 @@ func Test_UpkeepExecutor_PerformsUpkeep_Happy(t *testing.T) {
 		cltest.AssertCountStays(t, store, models.EthTx{}, 1)
 	})
 
+	t.Run("triggers exactly one upkeep if heads are skipped but later heads arrive within range", func(t *testing.T) {
+		// turn falls somewhere between 20-39 (blockCountPerTurn=20)
+		// heads 20 thru 35 were skipped (e.g. due to node reboot)
+		head := models.NewHead(big.NewInt(36), cltest.NewHash(), cltest.NewHash(), 1000)
+
+		executor.OnNewLongestChain(context.Background(), head)
+		cltest.WaitForCount(t, store, models.EthTx{}, 1)
+		assertLastRunHeight(t, store, upkeep, 20)
+		runs := cltest.WaitForPipelineComplete(t, 0, job.ID, 1, jpv2.Jrm, time.Second, 100*time.Millisecond)
+		require.Len(t, runs, 1)
+		_, ok := runs[0].Meta.Val.(map[string]interface{})["eth_tx_id"]
+		assert.True(t, ok)
+
+		// heads 36, 37 etc do nothing
+		for i := 36; i < 40; i++ {
+			head := models.NewHead(big.NewInt(int64(i)), cltest.NewHash(), cltest.NewHash(), 1000)
+			executor.OnNewLongestChain(context.Background(), head)
+			cltest.AssertCountStays(t, store, models.EthTx{}, 1)
+		}
+
+		// head 40 triggers a new run
+		head = models.NewHead(big.NewInt(40), cltest.NewHash(), cltest.NewHash(), 1000)
+
+		executor.OnNewLongestChain(context.Background(), head)
+		cltest.WaitForCount(t, store, models.EthTx{}, 2)
+		assertLastRunHeight(t, store, upkeep, 40)
+		runs = cltest.WaitForPipelineComplete(t, 0, job.ID, 1, jpv2.Jrm, time.Second, 100*time.Millisecond)
+		require.Len(t, runs, 2)
+		_, ok = runs[0].Meta.Val.(map[string]interface{})["eth_tx_id"]
+		assert.True(t, ok)
+
+	})
+
 	ethMock.AssertExpectations(t)
 }
 
-func Test_UpkeepExecutor_PerformsUpkeep_Error(t *testing.T) {
+func Test_UpkeepExecuter_PerformsUpkeep_Error(t *testing.T) {
 	t.Parallel()
 	g := gomega.NewGomegaWithT(t)
 
