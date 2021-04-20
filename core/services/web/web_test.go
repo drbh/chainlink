@@ -1,13 +1,14 @@
-package cron_test
+package web_test
 
 import (
 	"context"
 	"testing"
 
+	"github.com/smartcontractkit/chainlink/core/services/web"
+
 	pipeline_mocks "github.com/smartcontractkit/chainlink/core/services/pipeline/mocks"
 
 	"github.com/smartcontractkit/chainlink/core/internal/cltest"
-	"github.com/smartcontractkit/chainlink/core/services/cron"
 	"github.com/smartcontractkit/chainlink/core/services/job"
 	"github.com/smartcontractkit/chainlink/core/services/pipeline"
 	"github.com/smartcontractkit/chainlink/core/services/postgres"
@@ -15,9 +16,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCronV2Pipeline(t *testing.T) {
+func TestWebJobV2Pipeline(t *testing.T) {
 	runner := new(pipeline_mocks.Runner)
-	config, oldORM, cleanupDB := cltest.BootstrapThrowawayORM(t, "service_cron_orm", true, true)
+	config, oldORM, cleanupDB := cltest.BootstrapThrowawayORM(t, "services_web_orm", true, true)
 	db := oldORM.DB
 	orm, eventBroadcaster, cleanupPipeline := cltest.NewPipelineORM(t, config, db)
 	jobORM := job.NewORM(db, config.Config, orm, eventBroadcaster, &postgres.NullAdvisoryLocker{})
@@ -29,13 +30,13 @@ func TestCronV2Pipeline(t *testing.T) {
 	defer cleanup()
 
 	spec := &job.Job{
-		Type:          job.Cron,
+		Type:          job.WebJob,
 		SchemaVersion: 1,
-		CronSpec:      &job.CronSpec{CronSchedule: "0 0 0 1 1 *"},
+		WebSpec:       &job.WebSpec{},
 		Pipeline:      *pipeline.NewTaskDAG(),
 		PipelineSpec:  &pipeline.Spec{},
 	}
-	delegate := cron.NewDelegate(runner)
+	delegate := web.NewDelegate(runner)
 
 	err := jobORM.CreateJob(context.Background(), spec, spec.Pipeline)
 	require.NoError(t, err)
@@ -48,5 +49,4 @@ func TestCronV2Pipeline(t *testing.T) {
 	defer service.Close()
 
 	require.NoError(t, err)
-
 }
