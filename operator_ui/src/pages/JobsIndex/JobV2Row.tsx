@@ -49,6 +49,7 @@ export const JobV2Row = withStyles(tableStyles)(({ job, classes }: Props) => {
       case 'directrequest':
         return job.attributes.directRequestSpec.initiator
       case 'keeper':
+      case 'cron':
       case 'offchainreporting':
         return 'N/A'
       default:

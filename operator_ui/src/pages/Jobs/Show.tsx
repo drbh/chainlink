@@ -99,6 +99,9 @@ export const JobsShow = () => {
                 break
               case 'keeper':
                 createdAt = jobSpec.attributes.keeperSpec.createdAt
+                break
+              case 'cron':
+                createdAt = jobSpec.attributes.cronSpec.createdAt
 
                 break
             }
