@@ -86,7 +86,7 @@ export type PipelineJobRun = BaseJobRun & {
   }
   status: PipelineJobRunStatus
   taskRuns: PipelineTaskRun[]
-  type: 'Off-chain reporting job run'
+  type: 'Pipeline job run'
 }
 
 export type JobData = {
