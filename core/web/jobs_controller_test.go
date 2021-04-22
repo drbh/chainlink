@@ -178,7 +178,7 @@ func TestJobsController_Create_CronRequestSpec(t *testing.T) {
 	err := web.ParseJSONAPIResponse(cltest.ParseResponseBody(t, response), &resource)
 	assert.NoError(t, err)
 	assert.NotNil(t, resource.PipelineSpec.DotDAGSource)
-	require.Equal(t, "0 0 0 1 1 *", jb.CronSpec.CronSchedule)
+	require.Equal(t, "0 0 1 1 *", jb.CronSpec.CronSchedule)
 }
 
 func TestJobsController_Create_HappyPath_DirectRequestSpec(t *testing.T) {
@@ -255,6 +255,7 @@ func TestJobsController_Create_HappyPath_FluxMonitorSpec(t *testing.T) {
 	assert.Equal(t, float32(0.5), jb.FluxMonitorSpec.Threshold)
 	assert.Equal(t, float32(0), jb.FluxMonitorSpec.AbsoluteThreshold)
 }
+
 func TestJobsController_Index_HappyPath(t *testing.T) {
 	client, ocrJobSpecFromFile, _, ereJobSpecFromFile, _ := setupJobSpecsControllerTestsWithJobs(t)
 

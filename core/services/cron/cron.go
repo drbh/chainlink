@@ -54,8 +54,8 @@ func NewCronFromJobSpec(
 func (cr *Cron) Start() error {
 	cr.logger.Debug("Cron: Starting")
 	go gracefulpanic.WrapRecover(func() {
-		cr.run()
 		defer close(cr.chDone)
+		cr.run()
 	})
 	return nil
 }
